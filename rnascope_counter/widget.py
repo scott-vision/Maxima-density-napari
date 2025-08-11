@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import List
+import pathlib
 
 import numpy as np
 import pandas as pd
@@ -22,11 +23,11 @@ def counter_widget(
     hippo_rois: "napari.layers.Shapes",
     thalamus: "napari.layers.Image",
     thalamus_rois: "napari.layers.Shapes",
-    output: Path = Path("results.csv"),
+    output: "pathlib.Path" = Path("results.csv"),
     pixel_spacing: float = 0.4475,
     threshold: float = 100.0,
     min_distance: int = 5,
-) -> pd.DataFrame:
+) -> "pandas.DataFrame":
     """Analyze ROIs and write results to ``output``.
 
     Parameters
@@ -49,13 +50,15 @@ def counter_widget(
 
     results: List[dict] = []
 
-    def _analyze(img: np.ndarray, rois: np.ndarray, region_names: List[str]):
-        for region, verts in zip(region_names, rois):
-            mask = polygon2mask(img.shape[-2:], verts)
+    def _analyze(img_layer, rois_layer, region_name):
+        img_data = img_layer.data  # (C, Y, X)
+        for verts in rois_layer.data:
+            mask = polygon2mask(img_data.shape[1:], verts)
             area_um2 = float(mask.sum()) * pixel_spacing ** 2
             for ch_idx, ch_name in enumerate(["GOB", "GOA"], start=1):
+                channel_img = img_data[ch_idx, :, :]  # 2D slice
                 coords = peak_local_max(
-                    img[ch_idx],
+                    channel_img,
                     threshold_abs=threshold,
                     min_distance=min_distance,
                     labels=mask,
@@ -63,17 +66,17 @@ def counter_widget(
                 if coords.size:
                     viewer.add_points(
                         coords,
-                        name=f"{region}_{ch_name}",
+                        name=f"{region_name}_{ch_name}",
                         face_color="cyan" if ch_idx == 1 else "magenta",
                         size=4,
                     )
-                    intensities = img[ch_idx][coords[:, 0], coords[:, 1]]
+                    intensities = channel_img[coords[:, 0], coords[:, 1]]
                     mean_intensity = float(np.mean(intensities))
                 else:
                     mean_intensity = 0.0
                 results.append(
                     {
-                        "region": region,
+                        "region": region_name,
                         "channel": ch_name,
                         "count": int(len(coords)),
                         "mean_intensity": mean_intensity,
