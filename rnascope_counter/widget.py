@@ -50,9 +50,8 @@ def counter_widget(
 
     results: List[dict] = []
 
-    def _analyze(img_layer, rois_layer, region_name):
-        img_data = img_layer.data  # (C, Y, X)
-        for verts in rois_layer.data:
+    def _analyze(img_data, rois_data, region_names):
+        for verts, region_name in zip(rois_data, region_names):
             mask = polygon2mask(img_data.shape[1:], verts)
             area_um2 = float(mask.sum()) * pixel_spacing ** 2
             for ch_idx, ch_name in enumerate(["GOB", "GOA"], start=1):
