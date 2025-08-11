@@ -5,7 +5,6 @@ from pathlib import Path
 
 import tifffile
 import napari
-from napari.utils.colormaps import AVAILABLE_COLORMAPS
 
 
 def main(argv: "list[str]" | None = None) -> None:
@@ -20,19 +19,19 @@ def main(argv: "list[str]" | None = None) -> None:
 
     def load_image(path: Path, name: str):
     
-        arr = tifffile.imread(str(path))  # shape should be (C, Y, X)
+        arr = tifffile.imread(str(path))  # expected shape (C, Y, X)
         if arr.ndim != 3:
             raise ValueError(f"{name} must have shape (channels, y, x)")
-    
-        cmap_list = ["gray", "cyan", "magenta"]
-        return viewer.add_image(
+
+        layer = viewer.add_image(
             arr,
             name=name,
-            channel_axis=0,
-            colormap=[AVAILABLE_COLORMAPS[c] for c in cmap_list],
-            blending="additive",
+            colormap="gray",
             metadata={"channel_names": ["Nuclei", "GOB", "GOA"]},
         )
+        # Ensure the first axis is labeled as channels so a slider appears.
+        viewer.dims.axis_labels = ["channel", "y", "x"]
+        return layer
 
 
     # Load images
