@@ -21,7 +21,9 @@ def main(argv: list[str] | None = None) -> None:
     if args.thalamus:
         viewer.open(str(args.thalamus), channel_axis=0, name="thalamus")
 
-    viewer.window.add_dock_widget(counter_widget(viewer), name="RNAScope Counter", area="right")
+    viewer.window.add_dock_widget(
+        counter_widget(viewer=viewer), name="RNAScope Counter", area="right"
+    )
     napari.run()
 
 
