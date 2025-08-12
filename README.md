@@ -30,4 +30,10 @@ python -m rnascope_counter --hippocampus path/to/hippo.tif --thalamus path/to/th
 ```
 
 After launching, use the docked *RNAScope Counter* widget to enter the pixel spacing (default `0.4475` µm/pixel), choose the output CSV location, and adjust the `threshold` and `min_distance` parameters that control spot detection.
-Draw polygon ROIs on each image before pressing **Analyze**.
+
+Create two `Shapes` layers before analysing:
+
+1. Click *Add shapes layer* to create a layer named `hippo_rois` and draw **exactly three** polygons representing the CA1, CA3 and DG regions of the hippocampus.
+2. Create another shapes layer named `thalamus_rois` and draw **one** polygon covering the thalamus.
+
+The right-hand drop-down menus in the widget simply select among existing layers. Choose your `hippo_rois` and `thalamus_rois` layers in those boxes, then draw the polygons as described above and press **Analyze**.
