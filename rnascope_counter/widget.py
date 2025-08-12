@@ -103,15 +103,17 @@ def counter_widget(
             minc, maxc = xs.min(), xs.max() + 1
             for ch_idx, ch_name in [(gob_idx, "GOB"), (goa_idx, "GOA")]:
                 channel_img = img_data[ch_idx, :, :]
-                coords = peak_local_max(
-                    channel_img,
+                channel_cutout = channel_img[minr:maxr, minc:maxc]
+                mask_cutout = mask[minr:maxr, minc:maxc]
+                coords_local = peak_local_max(
+                    channel_cutout,
                     threshold_abs=threshold,
                     min_distance=min_distance,
-                    labels=mask,
+                    labels=mask_cutout,
                 )
+                coords = coords_local + np.array([minr, minc])
 
-                channel_masked = np.where(mask, channel_img, 0)
-                cutout = channel_masked[minr:maxr, minc:maxc]
+                cutout = np.where(mask_cutout, channel_cutout, 0)
                 cutout = exposure.rescale_intensity(cutout, out_range=(0, 255)).astype(
                     np.uint8
                 )
@@ -122,9 +124,7 @@ def counter_widget(
                 )
 
                 annotated = cutout.copy()
-                for r, c in coords:
-                    r -= minr
-                    c -= minc
+                for r, c in coords_local:
                     rr_start, rr_end = max(r - 1, 0), min(r + 2, annotated.shape[0])
                     cc_start, cc_end = max(c - 1, 0), min(c + 2, annotated.shape[1])
                     annotated[rr_start:rr_end, c] = 255
