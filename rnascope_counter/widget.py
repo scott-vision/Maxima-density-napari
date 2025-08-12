@@ -37,7 +37,10 @@ def counter_widget(
     hippo, thalamus : napari.layers.Image
         Three-channel images with Nuclei, GOB, GOA channels.
     hippo_rois, thalamus_rois : napari.layers.Shapes
-        Polygon ROIs drawn on the corresponding images.
+        Polygon ROIs drawn on the corresponding images. ``hippo_rois`` should
+        contain three polygons representing CA1, CA3, and DG in that order;
+        ``thalamus_rois`` should contain a single polygon representing the
+        thalamus.
     output : pathlib.Path
         Location where results will be written as CSV.
     pixel_spacing : float
@@ -86,6 +89,7 @@ def counter_widget(
 
     # Hippocampus regions CA1, CA3, DG
     hippo_names = ["CA1", "CA3", "DG"]
+    # ``hippo_rois`` is expected to contain three polygons in this order.
     _analyze(hippo.data, hippo_rois.data, hippo_names)
 
     # Thalamus region
