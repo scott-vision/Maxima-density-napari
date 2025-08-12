@@ -5,6 +5,7 @@ from pathlib import Path
 
 import tifffile
 import napari
+from napari.utils.notifications import show_info
 
 
 def main(argv: "list[str]" | None = None) -> None:
@@ -35,28 +36,55 @@ def main(argv: "list[str]" | None = None) -> None:
 
 
     # Load images
+    hippo_layer = None
+    thalamus_layer = None
     if args.hippocampus:
-        load_image(args.hippocampus, "hippocampus")
-    
+        hippo_layer = load_image(args.hippocampus, "hippocampus")
+
     if args.thalamus:
-        load_image(args.thalamus, "thalamus")
+        thalamus_layer = load_image(args.thalamus, "thalamus")
 
     # Auto-create ROI layers
     # ``hippo_rois`` is expected to contain three polygons corresponding to
     # hippocampal regions CA1, CA3, and DG in that order. ``thalamus_rois``
     # should contain a single polygon covering the thalamus.
-    viewer.add_shapes(
+    hippo_rois = viewer.add_shapes(
         name="hippo_rois",
         shape_type="polygon",
         edge_color="yellow",
         face_color="transparent",
     )
-    viewer.add_shapes(
+    thalamus_rois = viewer.add_shapes(
         name="thalamus_rois",
         shape_type="polygon",
         edge_color="yellow",
         face_color="transparent",
     )
+
+    # Start with thalamus hidden so user focuses on hippocampus
+    if thalamus_layer is not None:
+        thalamus_layer.visible = False
+        thalamus_rois.visible = False
+
+    show_info("Draw polygon around CA1 in hippo_rois")
+
+    def _on_hippo_roi_change(event):
+        n = len(hippo_rois.data)
+        if n == 1:
+            show_info("Draw polygon around CA3")
+        elif n == 2:
+            show_info("Draw polygon around DG")
+        elif n == 3:
+            show_info("Draw polygon around the thalamus")
+            if hippo_layer is not None:
+                hippo_layer.visible = False
+            hippo_rois.visible = False
+            if thalamus_layer is not None:
+                thalamus_layer.visible = True
+                thalamus_rois.visible = True
+            hippo_rois.events.data.disconnect(_on_hippo_roi_change)
+
+    hippo_rois.events.data.connect(_on_hippo_roi_change)
 
     # Add dock widget
     viewer.window.add_dock_widget(

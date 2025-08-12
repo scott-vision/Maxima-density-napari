@@ -9,11 +9,11 @@ The three channels should be:
 - GOB, 560 nm, Opal 570
 - GOA, 650 nm, Opal 650
 
-Takes in the paths to 2 montage images (hippocampus and thalamus) and allows the user to select ROIs. The application creates two empty shapes layers named ``hippo_rois`` and ``thalamus_rois``. The first image displayed is of the hippocampus and ``hippo_rois`` should contain 3 polygons drawn in this order:
+Takes in the paths to 2 montage images (hippocampus and thalamus) and allows the user to select ROIs. The application creates two empty shapes layers named ``hippo_rois`` and ``thalamus_rois``. When the viewer launches, it guides ROI creation: the thalamus layers are hidden and you are prompted to draw polygons on the hippocampus in this order:
 - CA1
 - CA3
 - DG
-The second montage is of the thalamus and ``thalamus_rois`` should contain one polygon representing the thalamus.
+After the three hippocampal regions are outlined, the viewer hides the hippocampus layers, reveals the thalamus, and prompts you to draw a single polygon representing the thalamus in ``thalamus_rois``.
 
 Then provides analysis of each region defined, including:
 - Number of spots in GOA/GOB channel
