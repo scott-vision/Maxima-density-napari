@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import pandas as pd
 from magicgui import magic_factory
-from skimage import io
+from skimage import io, exposure
 from skimage.draw import polygon2mask
 from skimage.feature import peak_local_max
 
@@ -20,6 +20,9 @@ from skimage.feature import peak_local_max
     threshold={"min": 0.0, "value": 100.0},
     min_distance={"min": 1, "value": 5},
     output_dir={"mode": "d"},
+    c1={"choices": ["DAPI", "GOB", "GOA"], "label": "Channel 1"},
+    c2={"choices": ["DAPI", "GOB", "GOA"], "label": "Channel 2"},
+    c3={"choices": ["DAPI", "GOB", "GOA"], "label": "Channel 3"},
 )
 def counter_widget(
     viewer: "napari.viewer.Viewer",
@@ -31,6 +34,9 @@ def counter_widget(
     pixel_spacing: float = 0.4475,
     threshold: float = 100.0,
     min_distance: int = 5,
+    c1: str = "DAPI",
+    c2: str = "GOB",
+    c3: str = "GOA",
 ) -> "pandas.DataFrame":
     """Analyze ROIs and write results to ``output_dir``.
 
@@ -53,6 +59,8 @@ def counter_widget(
         Absolute intensity threshold for peak detection.
     min_distance : int
         Minimum distance between peaks.
+    c1, c2, c3 : str
+        Labels for the three image channels. Defaults are DAPI, GOB, GOA.
     """
 
     logger = logging.getLogger(__name__)
@@ -80,6 +88,10 @@ def counter_widget(
 
     results: List[dict] = []
 
+    channel_labels = [c1, c2, c3]
+    gob_idx = channel_labels.index("GOB")
+    goa_idx = channel_labels.index("GOA")
+
     def _analyze(img_data, rois_data, region_names):
         for verts, region_name in zip(rois_data, region_names):
             logger.info("Analyzing region %s", region_name)
@@ -89,7 +101,7 @@ def counter_widget(
             ys, xs = np.where(mask)
             minr, maxr = ys.min(), ys.max() + 1
             minc, maxc = xs.min(), xs.max() + 1
-            for ch_idx, ch_name in enumerate(["GOB", "GOA"], start=1):
+            for ch_idx, ch_name in [(gob_idx, "GOB"), (goa_idx, "GOA")]:
                 channel_img = img_data[ch_idx, :, :]
                 coords = peak_local_max(
                     channel_img,
@@ -100,7 +112,14 @@ def counter_widget(
 
                 channel_masked = np.where(mask, channel_img, 0)
                 cutout = channel_masked[minr:maxr, minc:maxc]
-                io.imsave(output_dir / f"{region_name}_{ch_name}.png", cutout)
+                cutout = exposure.rescale_intensity(cutout, out_range=(0, 255)).astype(
+                    np.uint8
+                )
+                io.imsave(
+                    output_dir / f"{region_name}_{ch_name}.png",
+                    cutout,
+                    check_contrast=False,
+                )
 
                 annotated = cutout.copy()
                 for r, c in coords:
@@ -108,15 +127,19 @@ def counter_widget(
                     c -= minc
                     rr_start, rr_end = max(r - 1, 0), min(r + 2, annotated.shape[0])
                     cc_start, cc_end = max(c - 1, 0), min(c + 2, annotated.shape[1])
-                    annotated[rr_start:rr_end, c] = annotated.max()
-                    annotated[r, cc_start:cc_end] = annotated.max()
-                io.imsave(output_dir / f"{region_name}_{ch_name}_spots.png", annotated)
+                    annotated[rr_start:rr_end, c] = 255
+                    annotated[r, cc_start:cc_end] = 255
+                io.imsave(
+                    output_dir / f"{region_name}_{ch_name}_spots.png",
+                    annotated,
+                    check_contrast=False,
+                )
 
                 if coords.size:
                     viewer.add_points(
                         coords,
                         name=f"{region_name}_{ch_name}",
-                        face_color="cyan" if ch_idx == 1 else "magenta",
+                        face_color="cyan" if ch_name == "GOB" else "magenta",
                         size=4,
                     )
                     intensities = channel_img[coords[:, 0], coords[:, 1]]
