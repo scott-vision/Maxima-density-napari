@@ -42,13 +42,21 @@ def main(argv: "list[str]" | None = None) -> None:
         load_image(args.thalamus, "thalamus")
 
     # Auto-create ROI layers
-    for roi_name in ["CA1_rois", "CA3_rois", "DG_rois", "Thalamus_rois"]:
-        viewer.add_shapes(
-            name=roi_name,
-            shape_type="polygon",
-            edge_color="yellow",
-            face_color="transparent",
-        )
+    # ``hippo_rois`` is expected to contain three polygons corresponding to
+    # hippocampal regions CA1, CA3, and DG in that order. ``thalamus_rois``
+    # should contain a single polygon covering the thalamus.
+    viewer.add_shapes(
+        name="hippo_rois",
+        shape_type="polygon",
+        edge_color="yellow",
+        face_color="transparent",
+    )
+    viewer.add_shapes(
+        name="thalamus_rois",
+        shape_type="polygon",
+        edge_color="yellow",
+        face_color="transparent",
+    )
 
     # Add dock widget
     viewer.window.add_dock_widget(
