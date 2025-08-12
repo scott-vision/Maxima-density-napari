@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 import pathlib
 import json
+import logging
 
 import numpy as np
 import pandas as pd
@@ -54,6 +55,18 @@ def counter_widget(
         Minimum distance between peaks.
     """
 
+    logger = logging.getLogger(__name__)
+    if not logger.handlers:
+        logging.basicConfig(level=logging.INFO)
+
+    logger.info(
+        "Starting analysis with output_dir=%s, pixel_spacing=%s, threshold=%s, min_distance=%s",
+        output_dir,
+        pixel_spacing,
+        threshold,
+        min_distance,
+    )
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -69,6 +82,7 @@ def counter_widget(
 
     def _analyze(img_data, rois_data, region_names):
         for verts, region_name in zip(rois_data, region_names):
+            logger.info("Analyzing region %s", region_name)
             np.save(output_dir / f"{region_name}_roi.npy", verts)
             mask = polygon2mask(img_data.shape[1:], verts)
             area_um2 = float(mask.sum()) * pixel_spacing ** 2
@@ -109,6 +123,9 @@ def counter_widget(
                     mean_intensity = float(np.mean(intensities))
                 else:
                     mean_intensity = 0.0
+                logger.info(
+                    "\t%s: found %d spots", ch_name, len(coords)
+                )
                 results.append(
                     {
                         "region": region_name,
@@ -130,4 +147,5 @@ def counter_widget(
 
     df = pd.DataFrame(results)
     df.to_csv(output_dir / "results.csv", index=False)
+    logger.info("Analysis complete. Results written to %s", output_dir)
     return df
